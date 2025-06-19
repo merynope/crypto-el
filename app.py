@@ -64,7 +64,7 @@ if st.session_state.step == 0:
         """)
     if st.button("**Start Process**"):
         st.session_state.step = 1
-        st.experimental_rerun()
+        st.rerun()
 
 # Phase 1: Authentication Kyber1024 can be used instead of Kyber512
 if st.session_state.step >= 1:
@@ -75,11 +75,12 @@ if st.session_state.step >= 1:
     st.markdown("""The sender creates a set of keys using the Kyber512 algorithm.
     """, help="Kyber512 is a post-quantum key encapsulation mechanism (KEM) based on lattice cryptography. It is designed to be secure against quantum computer attacks, which could potentially break traditional cryptographic algorithms like RSA and ECC.")
     if st.session_state.step == 1 and st.button("Generate Key Pair with Kyber512"):
-        kemalg = "Kyber512"
-        st.session_state.kem = oqs.KeyEncapsulation(kemalg)
-        st.session_state.public_key = st.session_state.kem.generate_keypair()
+        st.session_state.kemalg = "Kyber512"
+        kem = oqs.KeyEncapsulation(st.session_state.kemalg)
+        st.session_state.public_key = kem.generate_keypair()
+        st.session_state.private_kem = kem  # still not recommended, but OK short-term
         st.session_state.step = 2
-        st.experimental_rerun()
+        st.rerun()
     if st.session_state.public_key is not None:
         st.success("Public Key generated successfully.")
 
@@ -91,7 +92,7 @@ if st.session_state.step >= 2:
         st.code(st.session_state.public_key, language='python')
         if st.session_state.step == 2 and st.button("Send Public Key"):
             st.session_state.step = 3
-            st.experimental_rerun()
+            st.rerun()
     if st.session_state.step > 2:
         st.success("Public Key sent to Receiver.")
 
@@ -104,7 +105,7 @@ if st.session_state.step >= 3:
         if st.session_state.step == 3 and st.button("Encrypt Shared Secret"):
             st.session_state.ciphertext, st.session_state.shared_secret_enc = st.session_state.kem.encap_secret(st.session_state.public_key)
             st.session_state.step = 4
-            st.experimental_rerun()
+            st.rerun()
     if st.session_state.ciphertext is not None:
         st.success("Shared secret encrypted successfully.")
 
@@ -117,7 +118,7 @@ if st.session_state.step >= 4:
         st.code(f"Encrypted Shared Secret: {base64.b64encode(st.session_state.shared_secret_enc).decode('utf-8')}", language='python')
         if st.session_state.step == 4 and st.button("Send Encrypted Shared Secret"):
             st.session_state.step = 5
-            st.experimental_rerun()
+            st.rerun()
     if st.session_state.step > 4:
         st.success("Encrypted Shared Secret sent to Sender.")
 
@@ -131,7 +132,7 @@ if st.session_state.step >= 5:
         if st.session_state.step == 5 and st.button("Decrypt Shared Secret"):
             st.session_state.shared_secret_dec = st.session_state.kem.decap_secret(st.session_state.ciphertext)
             st.session_state.step = 6
-            st.experimental_rerun()
+            st.rerun()
     if st.session_state.shared_secret_dec is not None:
         st.success("Shared secret decrypted successfully.")
 
@@ -152,7 +153,7 @@ if st.session_state.step >= 6:
             st.session_state.nonce = nonce
             st.session_state.tag = tag
             st.session_state.step = 7
-            st.experimental_rerun()
+            st.rerun()
     if st.session_state.encrypted_message:
         st.success("Message encrypted successfully and sent to Receiver.")
 
@@ -165,11 +166,11 @@ if st.session_state.step >= 7:
         if st.session_state.step == 7 and st.button("Decrypt Message"):
             st.session_state.decrypted_message = decrypt_message(st.session_state.shared_secret_dec, st.session_state.nonce, base64.b64decode(st.session_state.encrypted_message), st.session_state.tag)
             st.session_state.step = 8
-            st.experimental_rerun()
+            st.rerun()
 
 if st.session_state.step == 8:
     st.success(f"Decrypted Message: {st.session_state.decrypted_message}")
     if st.button("Start Again"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
-        st.experimental_rerun()
+        st.rerun()
